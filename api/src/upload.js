@@ -1,20 +1,59 @@
 const express = require('express');
+//const xlsx = require('xlsx');
 const router = express.Router();
+const excelToJson = require('convert-excel-to-json');
+const fs = require('fs');
+
 const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "./assets/uploads/");
+    },
+    filename: function (req, file, cb) {
+        let data = new Date().toISOString();
 
-let upload = multer({
-    destination: './assets/uploads/'
-})
+        data = data.replaceAll(':', '');
+        data = data.replaceAll('.', '');
 
-router.post('/', upload.array('file'), async (request, response) => {
-    response.status(200).send({
-        message: 'Deu certo'
-    })
-    /*
-     response.send({
-         upload: true,
-         files: request.files
-     });*/
+        cb(null, data + '_' + file.originalname);
+    }
+});
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter
+});
+
+router.post('/', upload.single('file'), async (req, resp) => {
+    try {
+        const file = req.file;
+
+        if (file?.filename == null || file?.filename == undefined) {
+            resp.statusCode = 400;
+        } else {
+
+            var filePath = file.path;
+
+            const excelData = excelToJson({
+                sourceFile: filePath,
+                header: {
+                    rows: 1
+                },
+            });
+
+            fs.remove(filePath);
+
+            return resp.status(200).json(excelData);
+        }
+    } catch (error) {
+        resp.statusCode = 500;
+    }
 });
 
 module.exports = router;
