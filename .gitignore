@@ -1,0 +1,4 @@
+.idea
+api/node_modules/
+frontend/node_modules/
+api/assets/uploads/
