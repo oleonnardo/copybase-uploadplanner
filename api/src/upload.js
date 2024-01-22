@@ -30,14 +30,15 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
-router.post('/', upload.single('file'), async (req, resp) => {
+router.post('/', upload.single('file'), (req, resp) => {
+    req.setTimeout(20000);
+
     try {
         const file = req.file;
 
         if (file?.filename == null || file?.filename == undefined) {
             resp.statusCode = 400;
         } else {
-
             var filePath = file.path;
 
             const excelData = excelToJson({
@@ -47,9 +48,13 @@ router.post('/', upload.single('file'), async (req, resp) => {
                 },
             });
 
-            fs.remove(filePath);
+            //fs.remove(filePath);
 
-            return resp.status(200).json(excelData);
+            return resp.status(200).send({
+                success: true,
+                data: excelData,
+                message: 'The spreadsheet has been loaded.',
+            });
         }
     } catch (error) {
         resp.statusCode = 500;
